@@ -13,18 +13,33 @@ use Wikibase\Repo\WikibaseRepo;
  */
 class DecodeEntityTest extends \PHPUnit_Framework_TestCase {
 
-	public function testDeserializeBlob() {
-		$json = file_get_contents( __DIR__ . '/data/testwikidata-Q33.json' );
+	/**
+	 * @dataProvider deserializeBlobProvider
+	 */
+	public function testDeserializeBlob( $file ) {
+		$json = file_get_contents( $file );
 		$codec = $this->getEntityContentDataCodec();
 
 		try {
 			$decodedItem = $codec->decodeEntity( $json, CONTENT_FORMAT_JSON );
 		} catch ( \Exception $ex ) {
-			echo "deserializtion failed\n";
+			echo "deserializtion failed for $file\n";
 			throw $ex;
 		}
 
 		$this->assertTrue( true );
+	}
+
+	public function deserializeBlobProvider() {
+		$cases = array();
+
+		$files = $files = glob( __DIR__ . '/data/*.json' );
+
+		foreach( $files as $file ) {
+			$cases[] = array( $file );
+		}
+
+		return $cases;
 	}
 
 	private function getEntityContentDataCodec() {
