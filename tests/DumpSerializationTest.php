@@ -17,11 +17,29 @@ class DumpSerializationTest extends \PHPUnit_Framework_TestCase {
 
 	private $codec;
 
-	/**
-	 * @dataProvider deserializeBlobProvider
-	 */
-	public function testDeserializeBlob( $itemId, $message ) {
-		$json = $this->fetchEntityBlob( $itemId );
+	public function testDeserializeBlob() {
+		$pgConn = $this->getDbConn();
+
+		$min = 0;
+		$max = 1000;
+
+		while ( $max <= 100000 ) {
+			$sql = "SELECT id FROM items WHERE id >= $min AND id < $max ORDER BY id";
+
+			$min = $min + 1000;
+			$max = $max + 1000;
+
+			$statement = $pgConn->query( $sql );
+
+			while ( $row = $statement->fetch() ) {
+				$itemId = $row['id'];
+				$json = $this->fetchEntityBlob( $row['id'] );
+				$this->assertCanDeserialize( $json, $itemId );
+			}
+		}
+	}
+
+	private function assertCanDeserialize( $json, $itemId ) {
 		$codec = $this->getEntityContentDataCodec();
 
 		try {
@@ -32,21 +50,6 @@ class DumpSerializationTest extends \PHPUnit_Framework_TestCase {
 		}
 
 		$this->assertTrue( true );
-	}
-
-	public function deserializeBlobProvider() {
-		$cases = array();
-
-		$pgConn = $this->getDbConn();
-		$sql = "SELECT id FROM items ORDER BY id LIMIT 10000";
-		$statement = $pgConn->query( $sql );
-
-		while ( $row = $statement->fetch() ) {
-			$id = $row['id'];
-			$cases[] = array( $id, "Item Q$id" );
-		}
-
-		return $cases;
 	}
 
 	private function getDbConn() {
